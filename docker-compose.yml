@@ -1,0 +1,60 @@
+version: '3.8'
+
+# Define all our microservices here
+services:
+  # 1. User Service
+  user-service:
+    build: 
+      context: ./userService
+      dockerfile: Containerfile # Uses the base Containerfile from Module 3/4
+#    command: python user_service.py # Overrides the startup command
+    container_name: user-service
+    ports:
+      - "5001:5001"
+    networks:
+      - ecommerce-net
+
+  # 2. Product Service
+  product-service:
+    build: 
+      context: ./productService
+      dockerfile: Containerfile
+#    command: python product_service.py
+    container_name: product-service
+    ports:
+      - "5002:5002"
+    networks:
+      - ecommerce-net
+
+  # 3. Order Service
+  order-service:
+    build: 
+      context: ./orderService
+      dockerfile: Containerfile
+#    command: python order_service.py
+    container_name: order-service
+    ports:
+      - "5003:5003"
+    networks:
+      - ecommerce-net
+
+  # 4. Frontend UI / API Gateway
+  frontend-service:
+    build: 
+      context: ./frontend
+      dockerfile: Containerfile # Uses the specific UI Containerfile
+    container_name: frontend-service
+    ports:
+      - "5000:5000"
+    networks:
+      - ecommerce-net
+    # Ensures the backend services start before the UI
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+
+# Define the shared virtual network
+networks:
+  ecommerce-net:
+    driver: bridge

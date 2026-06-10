@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservices E-Commerce</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-3xl font-bold text-gray-800 border-b pb-4 mb-6">E-Commerce Dashboard</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Order Form -->
+            <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
+                <h2 class="text-xl font-semibold mb-4 text-blue-800">Place an Order</h2>
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Select User</label>
+                    <select id="userSelect" class="w-full border rounded p-2 bg-white"></select>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">Select Product</label>
+                    <select id="productSelect" class="w-full border rounded p-2 bg-white"></select>
+                </div>
+                <button onclick="placeOrder()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                    Place Order
+                </button>
+                <div id="orderResult" class="mt-4 text-sm font-medium"></div>
+            </div>
+
+            <!-- Status Panels -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">System Status</h2>
+                
+                <div class="mb-4 p-4 bg-gray-50 border rounded-lg">
+                    <h3 class="font-medium text-gray-700 border-b pb-2 mb-2">Available Products</h3>
+                    <ul id="productList" class="text-sm text-gray-600 space-y-1"></ul>
+                </div>
+
+                <div class="p-4 bg-gray-50 border rounded-lg">
+                    <h3 class="font-medium text-gray-700 border-b pb-2 mb-2">Registered Users</h3>
+                    <ul id="userList" class="text-sm text-gray-600 space-y-1"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch Users on load
+        fetch('/api/users')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('userSelect');
+                const list = document.getElementById('userList');
+                select.innerHTML = ''; list.innerHTML = '';
+                data.users.forEach(u => {
+                    select.innerHTML += `<option value="${u.id}">${u.name} (${u.email})</option>`;
+                    list.innerHTML += `<li>ID: ${u.id} - ${u.name}</li>`;
+                });
+            });
+
+        // Fetch Products on load
+        function loadProducts() {
+            fetch('/api/products')
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('productSelect');
+                    const list = document.getElementById('productList');
+                    select.innerHTML = ''; list.innerHTML = '';
+                    data.products.forEach(p => {
+                        select.innerHTML += `<option value="${p.id}">${p.name} - $${p.price}</option>`;
+                        list.innerHTML += `<li>${p.name} - Stock: <span class="font-bold ${p.stock > 0 ? 'text-green-600' : 'text-red-600'}">${p.stock}</span></li>`;
+                    });
+                });
+        }
+        
+        loadProducts(); // Initial load
+
+        // Handle Order Placement
+        function placeOrder() {
+            const userId = document.getElementById('userSelect').value;
+            const productId = document.getElementById('productSelect').value;
+            const resultDiv = document.getElementById('orderResult');
+
+            resultDiv.innerHTML = "Processing...";
+            resultDiv.className = "mt-4 text-sm font-medium text-blue-600";
+
+            fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: parseInt(userId), product_id: parseInt(productId) })
+            })
+            .then(res => res.json().then(data => ({status: res.status, body: data})))
+            .then(res => {
+                if (res.status === 201) {
+                    resultDiv.innerHTML = `✅ Success! Order placed for ${res.body.order.product_name}.`;
+                    resultDiv.className = "mt-4 text-sm font-medium text-green-600";
+                    loadProducts(); // Refresh stock immediately
+                } else {
+                    resultDiv.innerHTML = `❌ Error: ${res.body.error}`;
+                    resultDiv.className = "mt-4 text-sm font-medium text-red-600";
+                }
+            })
+            .catch(err => {
+                resultDiv.innerHTML = `❌ System Error: Could not reach backend services.`;
+                resultDiv.className = "mt-4 text-sm font-medium text-red-600";
+            });
+        }
+    </script>
+</body>
+</html>
