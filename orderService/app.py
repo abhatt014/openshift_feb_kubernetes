@@ -108,6 +108,27 @@ def create_order():
     }
 
     return jsonify({"message": "Order created successfully", "order": order_response}), 201
+@app.route('/orders', methods=['GET'])
+def get_orders():
+    """Retrieve all orders from the MySQL database."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+        
+    try:
+        # dictionary=True ensures the results are returned as JSON-serializable dicts, not tuples
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, user_name, product_name, total_price FROM orders ORDER BY id DESC")
+        orders = cursor.fetchall()
+        
+        return jsonify({"orders": orders}), 200
+    except Error as e:
+        print(f"Error fetching orders: {e}")
+        return jsonify({"error": "Failed to fetch orders"}), 500
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
 
 if __name__ == '__main__':
     print("Starting Order Service on Port 5003")

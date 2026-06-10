@@ -44,7 +44,16 @@ def proxy_orders():
     except requests.exceptions.RequestException as e:
         print(f"Error connecting to Order Service: {e}")
         return jsonify({"error": "Order service unreachable"}), 503
-
+@app.route('/api/orders', methods=['GET'])
+def proxy_get_orders():
+    """Proxy request to fetch all orders from the isolated Order Service."""
+    try:
+        resp = requests.get(f"{ORDER_SVC_URL}/orders", timeout=5)
+        return jsonify(resp.json()), resp.status_code
+    except requests.exceptions.RequestException as e:
+        print(f"Error connecting to Order Service: {e}")
+        return jsonify({"orders": [], "error": "Order service unreachable"}), 503
+    
 if __name__ == '__main__':
     print(f"Starting Frontend Gateway UI on Port 5000")
     print(f"Connecting to Backend Services at: \nUsers: {USER_SVC_URL}\nProducts: {PRODUCT_SVC_URL}\nOrders: {ORDER_SVC_URL}")

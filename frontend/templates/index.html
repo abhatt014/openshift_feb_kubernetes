@@ -41,6 +41,10 @@
                     <h3 class="font-medium text-gray-700 border-b pb-2 mb-2">Registered Users</h3>
                     <ul id="userList" class="text-sm text-gray-600 space-y-1"></ul>
                 </div>
+                <div class="mt-4 p-4 bg-gray-50 border rounded-lg">
+                    <h3 class="font-medium text-gray-700 border-b pb-2 mb-2">Order History</h3>
+                    <ul id="orderList" class="text-sm text-gray-600 space-y-2"></ul>
+                </div>
             </div>
         </div>
     </div>
@@ -75,6 +79,30 @@
         }
         
         loadProducts(); // Initial load
+        // Fetch Orders
+        function loadOrders() {
+            fetch('/api/orders')
+                .then(res => res.json())
+                .then(data => {
+                    const list = document.getElementById('orderList');
+                    list.innerHTML = '';
+                    if (data.orders && data.orders.length > 0) {
+                        data.orders.forEach(o => {
+                            list.innerHTML += `<li class="bg-white p-2 rounded shadow-sm border border-gray-100">
+                                <span class="font-bold text-blue-600">Order #${o.id}</span>: 
+                                ${o.user_name} bought ${o.product_name} <span class="text-green-600 font-medium">($${o.total_price})</span>
+                            </li>`;
+                        });
+                    } else {
+                        list.innerHTML = `<li class="text-gray-400 italic">No orders found.</li>`;
+                    }
+                })
+                .catch(err => console.error("Error loading orders:", err));
+        }
+
+        // Add loadOrders() to the initial load alongside loadProducts()
+        loadOrders();
+        
 
         // Handle Order Placement
         function placeOrder() {
@@ -96,6 +124,7 @@
                     resultDiv.innerHTML = `✅ Success! Order placed for ${res.body.order.product_name}.`;
                     resultDiv.className = "mt-4 text-sm font-medium text-green-600";
                     loadProducts(); // Refresh stock immediately
+                    loadOrders(); // Refresh order history
                 } else {
                     resultDiv.innerHTML = `❌ Error: ${res.body.error}`;
                     resultDiv.className = "mt-4 text-sm font-medium text-red-600";
